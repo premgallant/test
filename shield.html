@@ -1,0 +1,460 @@
+<!doctype html>
+
+<meta charset="utf-8">
+<title>Shield Clusters</title>
+<script charset="utf-8" src="https://d3js.org/d3.v3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dagre-d3/0.4.17/dagre-d3.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q"
+    crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-context-menu@2.1.0/js/d3-context-menu.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/d3-context-menu@2.1.0/css/d3-context-menu.min.css">
+<style id="css">
+    .clusters rect {
+        fill: #fff;
+        stroke: #000000;
+        stroke-width: 0.25px;
+        stroke-dasharray: 10 5;
+    }
+
+    svg {
+        fill: #000000;
+    }
+
+    text {
+        font-weight: 300;
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serf;
+        font-size: 14px;
+    }
+
+    .clusters circle:hover {
+        cursor: pointer;
+    }
+
+    .node rect {
+        stroke: #999;
+        fill: #fff;
+        stroke-width: 1.5px;
+    }
+
+    .edgePath path {
+        stroke: #333;
+        stroke-width: 1.5px;
+    }
+
+    .edgePath path.path {
+        height: 1.5em;
+        stroke: #F9A825;
+        fill: none;
+        stroke-width: 2.5px;
+    }
+
+    .hidden {
+        display: none;
+    }
+
+    .arrowhead {
+        /* stroke: blue;
+        fill: blue;
+        stroke-width: 1.5px !important; */
+        width: 0;
+        height: 0;
+        border-top: 60px solid transparent;
+        border-bottom: 60px solid transparent;
+        border-left: 60px solid green;
+
+    }
+
+    marker>path {
+        stroke-width: 1.5px !important;
+    }
+
+    .inactive path {
+        stroke: #c1c1c1 !important
+    }
+
+    .inactive marker path {
+        stroke: #c1c1c1;
+        fill: #c1c1c1;
+    }
+
+    .density-low path {
+        stroke: green !important;
+    }
+
+    .density-medium path {
+        stroke: orange !important;
+    }
+
+    .density-high path {
+        stroke: red !important;
+
+    }
+
+    .density-low marker path {
+        fill: #00c852;
+    }
+
+    .density-medium marker path {
+        fill: orange;
+    }
+
+    .density-high marker path {
+        fill: red;
+    }
+
+    .weight-normal>path.path {
+        stroke-width: 1px;
+    }
+
+    .weight-medium>path.path {
+        stroke-width: 4px;
+    }
+
+    .weight-high>path.path {
+        stroke-width: 6px;
+    }
+
+    .animation-slow {
+        animation: arc-animation 80s linear infinite;
+    }
+
+    .animation-medium {
+        animation: arc-animation 35s linear infinite;
+    }
+
+    .animation-fast {
+        animation: arc-animation 10s linear infinite;
+    }
+
+    .animation {
+        stroke-dasharray: 10px;
+        stroke-linecap: round;
+        stroke-dashoffset: 1500;
+
+    }
+
+    @keyframes arc-animation {
+        to {
+            stroke-dashoffset: 0;
+        }
+    }
+
+    fill {
+        color: #000000;
+    }
+
+    .label {
+        color: #2D2D2D;
+        font-size: large;
+    }
+
+    .form-check {
+        margin-top: 0.5em;
+    }
+</style>
+
+<body>
+    <div class="container-fluid">
+        <div style="background-color: #62035d;margin-top: 1em;">
+            <div class="offset-4 col-lg-9 mt-2 mb-5">
+                <h2 style="align-content: center;padding-top: 0.3em;padding-bottom: 0.2em;color: antiquewhite;">Shield
+                    Infrastructure Resilience Simulator</h2>
+            </div>
+        </div>
+        <div class="container-fluid">
+
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="" id="default" checked>
+                        <label class="form-check-label" for="flexCheckDefault">
+                            Default
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="" id="cross_region">
+                        <label class="form-check-label" for="flexCheckChecked">
+                            Cross Region
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="" id="appcontainers_zone_failure">
+                        <label class="form-check-label" for="flexCheckChecked">
+                            App containers failure - Single Zone
+                        </label>
+                    </div>
+                </div>
+                <div class="col-lg-12">
+                    <svg id="svg-canvas" height="100%" width="100%"></svg>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</body>
+
+<script>
+
+    var cross_region = false;
+    var multi_az = true;
+    var appcontainers_zone_failure = false
+    var menu = [
+        {
+            title: 'simulate failure',
+            action: function (elm, d, i) {
+                console.log('The data is: ' + d, elm, i);
+                appcontainers_zone_failure = true;
+                if (appcontainers_zone_failure) {
+                    drawInfraGraph(multi_az, cross_region)
+                }
+            }
+        }, {
+            title: 'reset',
+            action: function (elm, d, i) {
+
+                console.log('The data is: ' + d, elm, i);
+                appcontainers_zone_failure = true;
+                appcontainers_zone_failure = false;
+                console.log('container\t' + appcontainers_zone_failure);
+                drawInfraGraph(multi_az, cross_region)
+
+            }
+        }
+
+    ]
+
+    drawInfraGraph(multi_az, cross_region)
+
+    $('#multi_az').click(function () {
+        console.log('Multi AZ');
+        drawInfraGraph(multi_az, cross_region)
+
+    })
+
+    $('#appcontainers_zone_failure').click(function () {
+        appcontainers_zone_failure = $(this).is(':checked'); // Or this.checked;
+        if (appcontainers_zone_failure) {
+            let resource = {}
+            resource.type = 'fargate_az1'
+            resource.impact = 'error'
+            drawInfraGraph(multi_az, cross_region)
+        } else {
+            appcontainers_zone_failure = false;
+            console.log('container\t' + appcontainers_zone_failure);
+            drawInfraGraph(multi_az, cross_region)
+
+        }
+    })
+
+    $('#cross_region').click(function () {
+        console.log('Cross Region');
+        cross_region = $(this).is(':checked'); // Or this.checked;
+        if (cross_region) {
+            console.log('Cross Region status:', cross_region); // Log the actual boolean value
+            drawInfraGraph(multi_az, cross_region)
+        } else {
+            cross_region = false;
+            drawInfraGraph(multi_az, cross_region)
+        }
+
+    })
+
+    function getNormalLink() {
+        return {
+            label: "Normal",
+            class: "animation animation-medium density-low"
+        }
+    }
+
+    function getErrorLink() {
+        return {
+            label: "Error",
+            class: "animation animation-medium density-high"
+        }
+    }
+
+    function drawInfraGraph(multi_az, cross_region) {
+        // Create the input graph
+        var g = new dagreD3.graphlib.Graph({ compound: true })
+            .setGraph({ rankdir: "LR" })
+            .setDefaultEdgeLabel(function () {
+                return {};
+            });
+
+        // Here we're setting the nodes
+        g.setNode('webclient', { labelType: "html", label: "<img src=../images/chrome.png style=width:90px;height:90px;>\n&nbsp;&nbsp;&nbsp;&nbsp;<h6>Browser</h6>", shape: "circle", style: 'fill: #fff;' });
+        g.setNode('mobile', { labelType: "html", label: "<img src=../images/mobile.png style=width:100px;height:140px;>\n&nbsp;&nbsp;&nbsp;&nbsp;<h6>Mobile</h6>", shape: "circle", style: 'fill: #fff;' });
+        g.setNode('cdn', { labelType: "html", label: "<img src=../images/akamai-logo.svg style=width:70px;height:30px;><h6 style=align:center>&nbsp;&nbsp;&nbsp;&nbsp;CDN</h6>", shape: "circle", style: 'fill: #fff;stroke: #0071c4; stroke-width: 5;' });
+        g.setNode('gateway_east1', { labelType: "html", label: "<img src=../images/apigee.png style=width:60px;height:20px;>", shape: "circle", style: 'fill: #fff;stroke: #0071c4; stroke-width: 5;' });
+        g.setNode('gateway_west2', { labelType: "html", label: "<img src=../images/apigee.png style=width:60px;height:20px;>", shape: "circle", style: 'fill: #fff;stroke: #0071c4; stroke-width: 5;' });
+        g.setNode('fargate_az1', { labelType: "html", label: '<img src=../images/Fargate.png style=width:40px;height:40px;>\n<h6>Shield</h6>', shape: "circle", style: 'fill: #fff;stroke:#fff' });
+        g.setNode('fargate_az2', { labelType: "html", label: '<img src=../images/Fargate.png style=width:40px;height:40px;>\n<h6>Shield</h6>', shape: "circle", style: 'fill: #fff;stroke:#fff' });
+        g.setNode('fargate_az3', { labelType: "html", label: '<img src=../images/Fargate.png style=width:40px;height:40px;>\n<h6>Shield</h6>', shape: "circle", style: 'fill: #fff;stroke:#fff' });
+        g.setNode('alb', { labelType: "html", label: '<img src=../images/Res_Elastic-Load-Balancing_Application-Load-Balancer_48.svg style=width:60px;height:60px;>\n<h6>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ALB</h6>', shape: "circle", style: 'fill: #fff;stroke:#fff' });
+        g.setNode('r53', { labelType: "html", label: '<img src=../images/Res_Amazon-Route-53_Resolver_48.svg style=width:60px;height:60px;>\n<h6>&nbsp;&nbsp;Route 53</h6>', shape: "circle", style: 'fill: #fff;stroke:#fff' });
+        g.setNode('rds_proxy', { labelType: "html", label: '<img src=../images/Res_Amazon-RDS-Proxy-Instance_48.svg style=width:70px;height:70px;>\n<h6>&nbsp;Proxy</h6>', shape: "circle", style: 'fill: #fff;stroke:#fff' });
+        g.setNode('rds_aurora', {
+            labelType: "html", label: "<img src=../images/Aurora.png style=width:70px;height:70px;>",
+            shape: "circle", style: 'fill: #fff;'
+        });
+
+        g.setNode('group', { label: 'US-east-1', clusterLabelPos: 'top', style: 'fill: #fff;' });
+        g.setNode('lookup', { label: 'DNS Service', clusterLabelPos: 'top', style: 'fill: #fff;' });
+        g.setNode('gateway_group1', { label: 'Gateway-us-east-1', clusterLabelPos: 'bottom', style: 'fill: #fff' });
+        g.setNode('gateway_group2', { label: 'Gateway-us-west-2', clusterLabelPos: 'bottom', style: 'fill: #fff' });
+        g.setNode('shield_az1', { label: 'Shield-AZ-1', clusterLabelPos: 'bottom', style: 'fill: #fff;' });
+        g.setNode('shield_az2', { label: 'Shield-AZ-2', clusterLabelPos: 'bottom', style: 'fill: #fff' });
+        g.setNode('shield_az3', { label: 'Shield-AZ-3', clusterLabelPos: 'bottom', style: 'fill: #fff' });
+
+        g.setParent('shield_az1', 'group');
+        g.setParent('shield_az2', 'group');
+        g.setParent('shield_az3', 'group');
+
+        g.setParent('gateway_east1', 'gateway_group1');
+        g.setParent('gateway_west2', 'gateway_group2');
+        g.setParent('r53', 'lookup');
+
+        g.setParent('fargate_az1', 'shield_az1');
+        g.setParent('fargate_az2', 'shield_az2');
+        g.setParent('fargate_az3', 'shield_az3');
+
+        if (multi_az) {
+
+            g.setNode('DB', { label: 'US-east-1 WRITER (AZ-1)', clusterLabelPos: 'bottom', style: 'fill: #fff' });
+            g.setNode('rds_aurora_az2', {
+                labelType: "html", label: "<img src=../images/Aurora.png style=width:70px;height:70px;>",
+                shape: "circle", style: 'fill: #fff;'
+            });
+            g.setNode('rds_aurora_az3', {
+                labelType: "html", label: "<img src=../images/Aurora.png style=width:70px;height:70px;>",
+                shape: "circle", style: 'fill: #fff;'
+            });
+            g.setNode('DB_az2', { label: 'US-east-1 Read Rep(AZ-2)', clusterLabelPos: 'bottom', style: 'fill: #fff;size:3em;' });
+            g.setNode('DB_az3', { label: 'US-east-1 Read Rep (AZ-3)', clusterLabelPos: 'bottom', style: 'fill: #fff' });
+            g.setParent('rds_aurora', 'DB');
+            g.setParent('rds_aurora_az2', 'DB_az2');
+            g.setParent('rds_aurora_az3', 'DB_az3');
+
+            g.setEdge('rds_aurora', 'rds_aurora_az2', getNormalLink());
+            g.setEdge('rds_aurora', 'rds_aurora_az3', getNormalLink());
+
+        }
+
+        if (cross_region) {
+
+            g.setNode('rds_proxy_e2', { labelType: "html", label: '<img src=../images/Res_Amazon-RDS-Proxy-Instance_48.svg style=width:70px;height:70px;>\n<h6>&nbsp;Proxy_2</h6>', shape: "circle", style: 'fill: #fff;stroke:#fff' });
+            g.setNode('alb_east2', { labelType: "html", label: '<img src=../images/Res_Elastic-Load-Balancing_Application-Load-Balancer_48.svg style=width:75px;height:75px;>\n<h6>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ALB</h6>', shape: "circle", style: 'fill: #fff;stroke:#fff' });
+            g.setNode('fargate_east2_az1', { labelType: "html", label: '<img src=../images/Fargate.png style=width:40px;height:40px;>\n<h6>Shield</h6>', shape: "circle", style: 'fill: #fff;stroke:#fff' });
+            g.setNode('fargate_east2_az2', { labelType: "html", label: '<img src=../images/Fargate.png style=width:40px;height:40px;>\n<h6>Shield</h6>', shape: "circle", style: 'fill: #fff;stroke:#fff' });
+            g.setNode('fargate_east2_az3', { labelType: "html", label: '<img src=../images/Fargate.png style=width:40px;height:40px;>\n<h6>Shield</h6>', shape: "circle", style: 'fill: #fff;stroke:#fff' });
+            g.setNode('group2', { label: 'US-east-2', clusterLabelPos: 'top', style: 'fill: #fff;' });
+            g.setNode('shield_east2', { label: 'Shield-AZ-1', clusterLabelPos: 'bottom', style: 'fill: #fff' });
+            g.setNode('shield_east2_az2', { label: 'Shield-AZ-2', clusterLabelPos: 'bottom', style: 'fill: #fff' });
+            g.setNode('shield_east2_az3', { label: 'Shield-AZ-3', clusterLabelPos: 'bottom', style: 'fill: #fff' });
+
+            g.setNode('rds_aurora_east2_az2', {
+                labelType: "html", label: "<img src=../images/Aurora.png style=width:70px;height:70px;>",
+                shape: "circle", style: 'fill: #fff;'
+            });
+            g.setNode('rds_aurora_east2_az3', {
+                labelType: "html", label: "<img src=../images/Aurora.png style=width:70px;height:70px;>",
+                shape: "circle", style: 'fill: #fff;'
+            });
+            g.setNode('DB_east2_az2', { label: 'US-east-2 Read Repl (AZ-2)', clusterLabelPos: 'bottom', style: 'fill: #fff' });
+            g.setNode('DB_east2_az3', { label: 'US-east-2 Read Rep (AZ-3)', clusterLabelPos: 'bottom', style: 'fill: #fff' });
+            g.setParent('shield_east2', 'group2');
+            g.setParent('shield_east2_az2', 'group2');
+            g.setParent('shield_east2_az3', 'group2');
+
+            g.setParent('fargate_east2_az1', 'shield_east2');
+            g.setParent('fargate_east2_az2', 'shield_east2_az2');
+            g.setParent('fargate_east2_az3', 'shield_east2_az3');
+            g.setParent('rds_aurora_east2_az2', 'DB_east2_az2');
+            g.setParent('rds_aurora_east2_az3', 'DB_east2_az3');
+
+            g.setEdge('gateway_east1', 'alb_east2', getNormalLink());
+            g.setEdge('alb_east2', 'fargate_east2_az1', getNormalLink());
+            g.setEdge('alb_east2', 'fargate_east2_az2', getNormalLink());
+            g.setEdge('alb_east2', 'fargate_east2_az3', getNormalLink());
+            g.setEdge('fargate_east2_az1', 'rds_proxy_e2', getNormalLink());
+            g.setEdge('fargate_east2_az2', 'rds_proxy_e2', getNormalLink());
+            g.setEdge('fargate_east2_az3', 'rds_proxy_e2', getNormalLink());
+            g.setEdge('rds_proxy_e2', 'rds_aurora_east2_az2', getNormalLink());
+            g.setEdge('rds_proxy_e2', 'rds_aurora_east2_az3', getNormalLink());
+        }
+
+        // Set up edges, no special attributes.
+        g.setEdge('mobile', 'cdn', getNormalLink());
+        g.setEdge('webclient', 'cdn', getNormalLink());
+        g.setEdge('cdn', 'r53', getNormalLink());
+        // g.setEdge('r53', 'cdn', getNormalLink());    
+        g.setEdge('cdn', 'gateway_east1', getNormalLink());
+        g.setEdge('cdn', 'gateway_west2', getNormalLink());  
+        g.setEdge('gateway_east1', 'r53', getNormalLink());
+        g.setEdge('gateway_west2', 'r53', getNormalLink());
+        // g.setEdge('r53', 'gateway_east1', getNormalLink());
+        // g.setEdge('r53', 'gateway_west2', getNormalLink());
+        g.setEdge('gateway_east1', 'alb', getNormalLink());
+        g.setEdge('gateway_west2', 'alb', getNormalLink());
+        g.setEdge('alb', 'fargate_az2', getNormalLink());
+        g.setEdge('alb', 'fargate_az3', getNormalLink());
+        g.setEdge('alb', 'fargate_az1', appcontainers_zone_failure ? getErrorLink() : getNormalLink());
+        g.setEdge('fargate_az1', 'rds_proxy', appcontainers_zone_failure ? getErrorLink() : getNormalLink());
+        g.setEdge('fargate_az2', 'rds_proxy', getNormalLink());
+        g.setEdge('fargate_az3', 'rds_proxy', getNormalLink());
+        g.setEdge('rds_proxy', 'rds_aurora', getNormalLink());
+       
+        g.nodes().forEach(function (v) {
+            var node = g.node(v);
+            // Round the corners of the nodes
+            node.rx = node.ry = 2;
+        });
+
+        // Set up an SVG group so that we can translate the final graph.
+        var svg = d3.select("svg"),
+            svgGroup = svg.append("g")
+            , inner = svg.select("g");
+
+        var zoom = d3.behavior.zoom().on("zoom", function () {
+            inner.attr("transform", "translate(" + d3.event.translate + ")" +
+                "scale(" + d3.event.scale + ")");
+        });
+
+        // svg.call(zoom);
+
+        // Create the renderer
+        var render = new dagreD3.render();
+
+        // Run the renderer. This is what draws the final graph.
+        render(d3.select("svg g"), g);
+
+        // Center the graph
+        var xCenterOffset = (svg.attr("width") - g.graph().width) / 2;
+        svgGroup.attr("transform", "translate(" + xCenterOffset + ", 20)");
+        svg.attr("height", g.graph().height + 20);
+
+        svg.selectAll("g.node")
+            .on("click", function (id) {
+                var _node = g.node(id);
+                console.log("Clicked " + id, _node);
+                console.log(getEdgesForNode(g, id))
+            })
+            .on('contextmenu', d3.contextMenu(menu));
+    }
+    function getEdgesForNode(graph, nodeId) {
+        const edges = graph.edges();
+        const nodeEdges = [];
+
+        for (const edge of edges) {
+            if (edge.v === nodeId || edge.w === nodeId) {
+                nodeEdges.push(edge);
+            }
+        }
+        return nodeEdges;
+    }
+</script>

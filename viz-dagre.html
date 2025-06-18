@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script charset="utf-8" src="https://d3js.org/d3.v3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dagre-d3/0.4.17/dagre-d3.min.js"></script>
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .clusters rect {
+            fill: #fff;
+            stroke: #000000;
+            stroke-width: 0.25px;
+            stroke-dasharray: 10 5;
+        }
+
+        svg {
+            fill: #000000;
+            overflow: scroll;
+        }
+
+        text {
+            font-weight: 300;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serf;
+            font-size: 14px;
+        }
+
+        .clusters circle:hover {
+            cursor: pointer;
+        }
+
+        .node rect {
+            stroke: #999;
+            fill: #fff;
+            stroke-width: 1.5px;
+        }
+
+        .edgePath path {
+            stroke: #333;
+            stroke-width: 1.5px;
+        }
+
+
+        .edgePath path.path {
+            height: 1em;
+            stroke: #F9A825;
+            fill: none;
+            stroke-width: 2.5px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .arrowhead {
+            /*stroke: blue;*/
+            /*fill: blue;*/
+            /*stroke-width: 1.5px !important;*/
+            width: 0;
+            height: 0;
+            border-top: 60px solid transparent;
+            border-bottom: 60px solid transparent;
+            border-left: 60px solid green;
+
+        }
+
+        marker > path {
+            stroke-width: 1.5px !important;
+        }
+
+        .inactive path {
+            stroke: #c1c1c1 !important
+        }
+
+        .inactive marker path {
+            stroke: #c1c1c1;
+            fill: #c1c1c1;
+        }
+
+        .density-low path {
+            stroke: green !important;
+        }
+
+        .density-medium path {
+            stroke: orange !important;
+        }
+
+        .density-high path {
+            stroke: red !important;
+
+        }
+
+        .density-low marker path {
+            fill: #00c852;
+        }
+
+        .density-medium marker path {
+            fill: orange;
+        }
+
+        .density-high marker path {
+            fill: red;
+        }
+
+        .weight-normal > path.path {
+            stroke-width: 1px;
+        }
+
+        .weight-medium > path.path {
+            stroke-width: 4px;
+        }
+
+        .weight-high > path.path {
+            stroke-width: 6px;
+        }
+
+        .animation-slow {
+            animation: arc-animation 100s linear infinite;
+        }
+
+        .animation-medium {
+            animation: arc-animation 50s linear infinite;
+        }
+
+        .animation-fast {
+            animation: arc-animation 10s linear infinite;
+        }
+
+        .animation {
+            stroke-dasharray: 10px;
+            stroke-linecap: round;
+            stroke-dashoffset: 1500;
+
+        }
+
+        @keyframes arc-animation {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        .label {
+            color: #2D2D2D;
+            font-size: medium;
+        }
+
+    </style>
+
+    <script>
+
+        var env = "local";
+        var api_label = 'dapi';
+        const end_points = {};
+        end_points.local = "http://localhost:8902";
+        end_points.local_trace = "http://localhost:8901/eto";
+        var trace_api_endpoint = end_points[env];
+
+        window.onload = function () {
+
+            run();
+            setInterval(run, 6000);
+
+        };
+
+        function run() {
+
+            var txgraphlabel;
+            if (api_label == 'dapi') {
+
+                txgraphlabel = 'DAPI Services Platform Traffic';
+                getGraph('dapi', txgraphlabel);
+            }
+        }
+
+        function getGraph(api_name, label) {
+
+
+            $.ajax({
+
+                url: trace_api_endpoint + '/traffic/graph/' + api_name,
+                headers: {
+                    'Accept': "application/json"
+                },
+                method: 'GET',
+                dataType: 'json',
+
+                success: function (response) {
+
+                }
+            });
+
+        }
+    </script>
+</head>
+<body>
+<div class="col-md-12">
+    <h3 style="text-align: center">Service Graph</h3>
+</div>
+<div class="col-md-6">
+    <svg height=1060 id="svg-canvas" width=1160></svg>
+</div>
+</body>
+</html>

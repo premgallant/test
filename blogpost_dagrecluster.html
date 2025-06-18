@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<script id="tinyhippos-injected">if (window.top.ripple) {
+    window.top.ripple("bootstrap").inject(window, document);
+}</script>
+<head>
+    <meta content="text/html; charset=UTF-8" http-equiv="Content-Type">
+    <title>Test </title>
+    <script charset="utf-8" src="https://d3js.org/d3.v3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dagre-d3/0.4.17/dagre-d3.min.js"></script>
+
+</head>
+<body cz-shortcut-listen="true" style="">
+<style id="css">
+    circle {
+        rx: 5;
+        ry: 5;
+    }
+
+    text {
+        font-weight: 300;
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serf;
+        font-size: 14px;
+    }
+
+    .node rect {
+        stroke: #333;
+        fill: #fff;
+        stroke-width: 1.5px;
+    }
+
+    .edgePath path.path {
+        stroke: #333;
+        fill: none;
+        stroke-width: 1.5px;
+    }
+
+    .arrowhead {
+        stroke: blue;
+        fill: blue;
+        stroke-width: 1.5px;
+    }
+
+    .groupClass1 > circle {
+        fill: url(#mainGradient2);
+        font-weight: bold;
+        stroke-width: 1px;
+        stroke: #4ca2cd;
+        rx: 5;
+        ry: 5;
+        opacity: 0;
+    }
+
+    .groupClass2 > circle {
+        fill: url(#mainGradient);
+        stroke: #4ca2cd;
+        box-shadow: #4ca2cd;
+        opacity: 0;
+    }
+
+    .groupClass2 > g > circle {
+        fill: red;
+    }
+
+    .groupClass3 > circle {
+        fill: rgb(203, 133, 203);
+        stroke: #914aaf;
+        opacity: 0;
+    }
+
+    .stop-left {
+        stop-color: #67b26f;
+        /* Indigo */
+    }
+
+    .stop-right {
+        stop-color: #4ca2cd;
+        /* Teal */
+    }
+
+    .stop-left2 {
+        stop-color: rgb(122, 172, 216);
+        /* Indigo */
+    }
+
+    .stop-right2 {
+        stop-color: #26D0CE;
+        /* Teal */
+    }
+
+    .stop-left3 {
+        stop-color: rgb(135, 180, 220);
+        /* Indigo */
+    }
+
+    .stop-right3 {
+        stop-color: rgb(214, 220, 226);
+        /* Teal */
+    }
+</style>
+<svg height="500" id="svg" width="100%">
+</svg>
+<section>
+    <select id="groupFilter" onchange="filterData()">
+        <option value="all">1</option>
+        <option value=2>2</option>
+        <option value=3>3</option>
+    </select>
+    <script id="js">
+        var listOfNodes = [
+            {id: 1, name: "11111Client Segment", group: 1, styleClass: "groupClass1"},
+            {id: 2, name: "Trade Segment", group: 1, styleClass: "groupClass1", connectTo: "8"},
+            {id: 3, name: "Trade Segment", group: 1, styleClass: "groupClass1", connectTo: "2"},
+            {id: 113, name: "Alone Segment", group: 1, styleClass: "groupClass1"},
+            {id: 4, name: "Trasaction Segment", group: 1, styleClass: "groupClass1", connectTo: "15"},
+            {id: 5, name: "Reg Segment", group: 1, styleClass: "groupClass1", connectTo: "4"},
+            {id: 6, name: "Finance Segment333", group: 1, styleClass: "groupClass1", connectTo: "9"},
+            {id: 7, name: "Technical Segment", group: 3, styleClass: "groupClass3", connectTo: "17"},
+            {id: 8, name: "Client Segment", group: 1, styleClass: "groupClass1", connectTo: "2"},
+            {id: 9, name: "Trade Segment1212", group: 2, styleClass: "groupClass2", connectTo: "11"},
+            {id: 10, name: "Trade Segment1221", group: 2, styleClass: "groupClass2", connectTo: "9"},
+            {id: 11, name: "Trasaction Segment", group: 2, styleClass: "groupClass2", connectTo: "10"},
+            {id: 15, name: "Reg Segment1212", group: 2, styleClass: "groupClass2", connectTo: "9"},
+            {id: 16, name: "Finance Segment", group: 3, styleClass: "groupClass3", connectTo: "7"},
+            {id: 17, name: "Technical Segment", group: 3, styleClass: "groupClass3", connectTo: "1"}
+        ];
+
+        // Create the input graph
+        function drawGraph(dataItems) {
+// dataItems = dataItems.sort((a, b) => parseFloat(a.connectTo) — parseFloat(b.connectTo));
+            var g = new dagreD3.graphlib.Graph({compound: true})
+                .setGraph({})
+                .setDefaultEdgeLabel(function () {
+                    return {};
+                });
+            let groupStyle = 'stroke: #c3c3c3;fill: #fff';
+// g.setNode('group', {label: 'Group', clusterLabelPos: 'top', style: 'fill: #d3d7e8;rx:10, ry:10'});
+            g.setNode('group_1', {label: 'Top Group', clusterLabelPos: 'top', style: groupStyle});
+            g.setNode('group_2', {label: 'Bottom Group', clusterLabelPos: 'top', style: groupStyle});
+            g.setNode('group_3', {label: 'Last Group', clusterLabelPos: 'top', style: groupStyle});
+// g.setParent('group_1', 'group');
+// g.setParent('group_2', 'group');
+// g.setParent('group_3', 'group');
+            dataItems.forEach(function (node) {
+// console.log(node)
+                g.setNode(node.id, {
+                    label: node.name, class: node.styleClass,
+                    rx: 5, ry: 5,
+                    labelStyle: "fill:black;opacity:0;font-size:10px;font-family:helvetica"
+                });
+                g.setParent(node.id, "group_" + node.group);
+                if (node.connectTo) {
+                    try {
+                        g.setEdge(node.id, node.connectTo, {
+                            style: "stroke: #f66; stroke-width: 1px;opacity:0",
+                            label: node.name,
+                            label: "Pricing",
+                            labelStyle: "font-size:11px;padding:0 0 0;margin:0 0 0;opacity:0",
+                            curve: d3.curveLinear
+                        });
+                    } catch (e) {
+                    }
+                }
+            });
+// g.graph().rankDir = 'BT';
+// Create the renderer
+            var render = new dagreD3.render();
+// Set up an SVG group so that we can translate the final graph.
+            var svg = d3.select("svg"),
+                inner = svg.append("g");
+// Run the renderer. This is what draws the final graph.
+            render(inner, g);
+            svg.selectAll("*").transition()
+                .duration(1000)
+                .style('opacity', 1);
+// Center the graph
+            var xCenterOffset = (svg.attr("width") - g.graph().width) / 2;
+            inner.attr("transform", "translate(" + xCenterOffset + ", 20)");
+            svg.attr("height", g.graph().height + 40);
+            var svgDefs = svg.append('defs');
+            var mainGradient = svgDefs.append('linearGradient')
+                .attr('id', 'mainGradient');
+// Create the stops of the main gradient. Each stop will be assigned
+// a class to style the stop using CSS.
+            mainGradient.append('stop')
+                .attr('class', 'stop-left')
+                .attr('offset', '0');
+            mainGradient.append('stop')
+                .attr('class', 'stop-right')
+                .attr('offset', '1');
+            var mainGradient2 = svgDefs.append('linearGradient')
+                .attr('id', 'mainGradient2');
+// Create the stops of the main gradient. Each stop will be assigned
+// a class to style the stop using CSS.
+            mainGradient2.append('stop')
+                .attr('class', 'stop-left2')
+                .attr('offset', '0');
+            mainGradient2.append('stop')
+                .attr('class', 'stop-right2')
+                .attr('offset', '1');
+            mainGradient2.attr("gradientTransform", "rotate(65)");
+            var mainGradient3 = svgDefs.append('linearGradient')
+                .attr('id', 'mainGradient3');
+// Create the stops of the main gradient. Each stop will be assigned
+// a class to style the stop using CSS.
+            mainGradient3.append('stop')
+                .attr('class', 'stop-left3')
+                .attr('offset', '0');
+            mainGradient3.append('stop')
+                .attr('class', 'stop-right3')
+                .attr('offset', '1');
+            mainGradient3.attr("gradientTransform", "rotate(65)");
+        }
+
+        function filterData() {
+            let val = document.getElementById("groupFilter").value;
+            var listOfNodesNew = listOfNodes;
+            console.log(val);
+            if (val != 'all') {
+                var listOfNodesNew = listOfNodes.filter((item) => {
+                    return item.group == val;
+                })
+            }
+            console.log(listOfNodesNew);
+            svg.remove();
+            svg = d3.selectAll("body").append("svg")
+                .attr('width', 1000)
+                .attr('height', 500);
+            drawGraph(listOfNodesNew);
+        }
+
+        drawGraph(listOfNodes);
+    </script>
+</section>
+</body>
+</html>
