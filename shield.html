@@ -10,18 +10,35 @@
     integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q"
     crossorigin="anonymous"></script>
 <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+<script src="calculator.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/d3-context-menu@2.1.0/js/d3-context-menu.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/d3-context-menu@2.1.0/css/d3-context-menu.min.css">
 <style id="css">
+    tr {
+        font-weight: bold;
+    }
+
+    /* NEW: Styles for the fixed container */
+    #svg-container {
+        width: 100%;
+        height: 100%;
+        border: 1px solid #f0f0f0;
+        overflow: hidden;
+        background-color: #fafafa;
+    }
+
+    /* NEW: Make the SVG element fill its container */
+    #svg-canvas {
+        width: 100%;
+        height: 100%;
+        cursor: move;
+    }
+
     .clusters rect {
         fill: #fff;
         stroke: #000000;
         stroke-width: 0.25px;
         stroke-dasharray: 10 5;
-    }
-
-    svg {
-        fill: #000000;
     }
 
     text {
@@ -57,15 +74,11 @@
     }
 
     .arrowhead {
-        /* stroke: blue;
-        fill: blue;
-        stroke-width: 1.5px !important; */
         width: 0;
         height: 0;
         border-top: 60px solid transparent;
         border-bottom: 60px solid transparent;
         border-left: 60px solid green;
-
     }
 
     marker>path {
@@ -73,12 +86,12 @@
     }
 
     .inactive path {
-        stroke: #c1c1c1 !important
+        stroke: #c6c6c6 !important
     }
 
     .inactive marker path {
-        stroke: #c1c1c1;
-        fill: #c1c1c1;
+        stroke: #fafafa;
+        fill: #c6c6c6;
     }
 
     .density-low path {
@@ -91,7 +104,6 @@
 
     .density-high path {
         stroke: red !important;
-
     }
 
     .density-low marker path {
@@ -134,7 +146,6 @@
         stroke-dasharray: 10px;
         stroke-linecap: round;
         stroke-dashoffset: 1500;
-
     }
 
     @keyframes arc-animation {
@@ -159,37 +170,95 @@
 
 <body>
     <div class="container-fluid">
-        <div style="background-color: #62035d;margin-top: 1em;">
-            <div class="offset-4 col-lg-9 mt-2 mb-5">
+        <div style="background-color: #62035d;margin-top: 0.1em;">
+            <div class="offset-4 col-lg-9 mb-5">
                 <h2 style="align-content: center;padding-top: 0.3em;padding-bottom: 0.2em;color: antiquewhite;">Shield
                     Infrastructure Resilience Simulator</h2>
             </div>
         </div>
         <div class="container-fluid">
-
             <div class="row">
-                <div class="col-lg-12">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" value="" id="default" checked>
-                        <label class="form-check-label" for="flexCheckDefault">
-                            Default
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" value="" id="cross_region">
-                        <label class="form-check-label" for="flexCheckChecked">
-                            Cross Region
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" value="" id="appcontainers_zone_failure">
-                        <label class="form-check-label" for="flexCheckChecked">
-                            App containers failure - Single Zone
-                        </label>
+                <div class="col-lg-3">
+                    <div class="col-lg-12 text-center">
+                        <div class="card border-dark mb-3">
+                            <div class="card-header">
+                                <h5>System Status</h5>
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title" id="system_status"></h5>
+                                <!-- <p class="card-text">Some quick example text to build on the card title and make up the
+                                    bulk of the card’s content.</p> -->
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="col-lg-12">
-                    <svg id="svg-canvas" height="100%" width="100%"></svg>
+                <div class="col-lg-3">
+                    <div class="col-lg-12 text-center">
+                        <div class="card border-dark mb-3">
+                            <div class="card-header">
+                                <h5>Description</h5>
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title" id="description"></h5>
+                                <!-- <p class="card-text">Some quick example text to build on the card title and make up the
+                                    bulk of the card’s content.</p> -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="col-lg-12 text-center">
+                        <div class="card border-dark mb-3">
+                            <div class="card-header">
+                                <h5>Availability</h5>
+                            </div>
+                            <div class="row g-0">
+                                <div class="col-md-3">
+                                    <h5 class="mt-2">Business Requirement</h5>
+                                    <!-- <h2 class="display-5">99.9%</h2> -->
+                                    <div class="col-auto">
+                                        <label for="availabilityInput" class="visually-hidden">Availability
+                                            Percentage</label>
+                                        <div class="input-group input-group-lg">
+                                            <input type="text" class="form-control fs-1 ms-3" name="availability"
+                                                value="99.9" id="availability">
+                                            <span class="input-group-text fs-3">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="text-center">
+                                        <button type="submit" id="default"
+                                            class="btn btn-primary btn-lg text-center mt-3"
+                                            onclick="availabilityCalculator();">Submit</button>
+                                    </div>
+                                    <p class="card-text">
+                                        <small>Calculations are based on the average Gregorian year: 365.2425
+                                            days</small>
+                                    </p>
+                                    <p id="availability-table"></p>
+                                </div>
+                                <div class="col-md-3">
+                                    <h5 class="mt-2">Actual Availability</h5>
+                                    <h2 class="display-5">100%</h2>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5 class="mt-2">Enter the estimated downtime in minutes</h5>
+                                    <input class="form-control form-control-lg" type="text" id="actual_observability"
+                                        placeholder="downtime in minutes" aria-label=".form-control-lg example">
+                                    <button type="button" class="btn btn-primary btn-lg mt-3 mb-2">Calculate Actual
+                                        Availability</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-12 mt-3">
+                    <div id="svg-container">
+                        <svg id="svg-canvas"></svg>
+                    </div>
                 </div>
             </div>
 
@@ -200,121 +269,255 @@
 
 <script>
 
-    var cross_region = false;
+    //dagre graph instance
+    var g
+    //Per DC
+    var defaultEast1AvailabilityZonesCount = 3
+    var east1AvailabilityZonesCount = 3
+
+    var system_operational = 'System is fully operational'
+    var active_active_system = 'System traffic is distributed across two regions'
+    var default_east1_all_az_system = 'System traffic is distributed across all availability zones of east-1 region'
+    var east1FargateAvailablePercentage = 100;
+
+    var context_map_message = {
+        'default_east1': {
+            "status": system_operational,
+            "description": default_east1_all_az_system
+        },
+        'simulate_active_active_traffic': {
+            "status": system_operational,
+            "description": active_active_system
+        }
+    }
+
+
+    // Other Variables
+    var context = ''
+    var deploy_cross_region = false;
     var multi_az = true;
-    var appcontainers_zone_failure = false
+    var fargate_east1_zone1_failure = false
+    var fargate_east1_zone2_failure = false
+    var fargate_east1_zone3_failure = false
+
+    var fargate_east1_app_region_failure = false;
+    var route_traffic_east2 = false;
+    var route_traffic_east1 = false;
+    var active_active_traffic_view = false;
     var menu = [
         {
             title: 'simulate failure',
-            action: function (elm, d, i) {
-                console.log('The data is: ' + d, elm, i);
-                appcontainers_zone_failure = true;
-                if (appcontainers_zone_failure) {
-                    drawInfraGraph(multi_az, cross_region)
+            action: function (elm, d) {
+                console.log('The data is: ' + d);
+                var _node = g.node(d);
+                if (d.includes('fargate_az1')) {
+                    fargate_east1_zone1_failure = true;
+                    east1AvailabilityZonesCount = east1AvailabilityZonesCount - 1
+                    console.log("Simulation mode for: " + d, _node);
+                    east1FargateAvailablePercentage = defaultEast1AvailabilityZonesCount > 0 ? Math.round((east1AvailabilityZonesCount / defaultEast1AvailabilityZonesCount) * 100) : 0;
+                    drawInfraGraph(multi_az, deploy_cross_region)
+
+
+                } else if (d.includes('fargate_az2')) {
+                    fargate_east1_zone2_failure = true;
+                    east1AvailabilityZonesCount = east1AvailabilityZonesCount - 1
+                    east1FargateAvailablePercentage = defaultEast1AvailabilityZonesCount > 0 ? Math.round((east1AvailabilityZonesCount / defaultEast1AvailabilityZonesCount) * 100) : 0;
+                    drawInfraGraph(multi_az, deploy_cross_region)
+
+                } else if (d.includes('fargate_az3')) {
+                    fargate_east1_zone3_failure = true;
+                    east1AvailabilityZonesCount = east1AvailabilityZonesCount - 1
+                    east1FargateAvailablePercentage = defaultEast1AvailabilityZonesCount > 0 ? Math.round((east1AvailabilityZonesCount / defaultEast1AvailabilityZonesCount) * 100) : 0;
+                    drawInfraGraph(multi_az, deploy_cross_region)
                 }
+
+                var percentageLost = 0;
+                if (east1AvailabilityZonesCount == 2) {
+                    updateSystemStatus('⚠️ Single-Zone Failure Detected.', 'warning')
+                    percentageLost = 100 - east1FargateAvailablePercentage;
+                    updateSystemDescription(percentageLost + ' % of capacity lost. Though system is operational, Check the overall latency, error and throughput metrics of the system')
+
+                } else if (east1AvailabilityZonesCount == 1) {
+                    updateSystemStatus('🔥 Multi-Zone Failure Detected.', 'error')
+                    percentageLost = 100 - east1FargateAvailablePercentage;
+                    updateSystemDescription(percentageLost + ' % of capacity lost. Possible system overload. Check latency, error rate, and throughput metrics to confirm.')
+
+                } else if (east1AvailabilityZonesCount == 0) {
+                    updateSystemStatus('🚨 Entire Cluster in Region Failure!', 'error')
+                    fargate_east1_app_region_failure = true;
+                    drawInfraGraph(multi_az, deploy_cross_region)
+                    percentageLost = 100 - east1FargateAvailablePercentage;
+                    updateSystemDescription(percentageLost + ' % of capacity lost. System is down, If you have a cluster deployed in a different Region, route the traffic to it')
+
+
+                }
+
             }
         }, {
             title: 'reset',
             action: function (elm, d, i) {
 
-                console.log('The data is: ' + d, elm, i);
-                appcontainers_zone_failure = true;
-                appcontainers_zone_failure = false;
-                console.log('container\t' + appcontainers_zone_failure);
-                drawInfraGraph(multi_az, cross_region)
+                console.log('Reset data is: ' + d);
+                fargate_east1_zone1_failure = false;
+                console.log('container\t' + fargate_east1_zone1_failure);
+                drawInfraGraph(multi_az, deploy_cross_region)
 
             }
         }
-
     ]
 
-    drawInfraGraph(multi_az, cross_region)
-
-    $('#multi_az').click(function () {
-        console.log('Multi AZ');
-        drawInfraGraph(multi_az, cross_region)
-
-    })
-
-    $('#appcontainers_zone_failure').click(function () {
-        appcontainers_zone_failure = $(this).is(':checked'); // Or this.checked;
-        if (appcontainers_zone_failure) {
-            let resource = {}
-            resource.type = 'fargate_az1'
-            resource.impact = 'error'
-            drawInfraGraph(multi_az, cross_region)
-        } else {
-            appcontainers_zone_failure = false;
-            console.log('container\t' + appcontainers_zone_failure);
-            drawInfraGraph(multi_az, cross_region)
-
-        }
-    })
-
-    $('#cross_region').click(function () {
-        console.log('Cross Region');
-        cross_region = $(this).is(':checked'); // Or this.checked;
-        if (cross_region) {
-            console.log('Cross Region status:', cross_region); // Log the actual boolean value
-            drawInfraGraph(multi_az, cross_region)
-        } else {
-            cross_region = false;
-            drawInfraGraph(multi_az, cross_region)
+    function updateSystemStatus(statusText, statusType) {
+        const statusElement = $('#system_status');
+        statusElement.text(statusText);
+        // Default color
+        let color = 'black';
+        // Dynamically choose the color based on the status type
+        if (statusType === 'success') {
+            color = '#00c852'; // A nice green
+        } else if (statusType === 'error') {
+            color = '#ef4444'; // A strong red
+        } else if (statusType === 'warning') {
+            color = '#f59e0b'; // An amber/orange
         }
 
-    })
+        // Apply the chosen color using jQuery's .css() method
+        statusElement.css('color', color);
+    }
 
+    function updateSystemDescription(statusText) {
+        const statusElement = $('#description');
+        statusElement.text(statusText);
+        // Default color
+        let color = 'black';
+        // Apply the chosen color using jQuery's .css() method
+        statusElement.css('color', color);
+    }
+
+    function getInactiveLink() {
+        var animation_mode = "animation inactive";
+        return { label: "Normal", class: animation_mode }
+    }
     function getNormalLink() {
-        return {
-            label: "Normal",
-            class: "animation animation-medium density-low"
-        }
+        var animation_mode = ''
+        animation_mode = "animation animation-medium density-low"
+        return { label: "Normal", class: animation_mode }
     }
 
     function getErrorLink() {
-        return {
-            label: "Error",
-            class: "animation animation-medium density-high"
-        }
+        return { label: "Error", class: "animation animation-medium density-high" }
     }
 
-    function drawInfraGraph(multi_az, cross_region) {
-        // Create the input graph
-        var g = new dagreD3.graphlib.Graph({ compound: true })
-            .setGraph({ rankdir: "LR" })
-            .setDefaultEdgeLabel(function () {
-                return {};
-            });
+    function getLink(region) {
 
-        // Here we're setting the nodes
-        g.setNode('webclient', { labelType: "html", label: "<img src=../images/chrome.png style=width:90px;height:90px;>\n&nbsp;&nbsp;&nbsp;&nbsp;<h6>Browser</h6>", shape: "circle", style: 'fill: #fff;' });
-        g.setNode('mobile', { labelType: "html", label: "<img src=../images/mobile.png style=width:100px;height:140px;>\n&nbsp;&nbsp;&nbsp;&nbsp;<h6>Mobile</h6>", shape: "circle", style: 'fill: #fff;' });
-        g.setNode('cdn', { labelType: "html", label: "<img src=../images/akamai-logo.svg style=width:70px;height:30px;><h6 style=align:center>&nbsp;&nbsp;&nbsp;&nbsp;CDN</h6>", shape: "circle", style: 'fill: #fff;stroke: #0071c4; stroke-width: 5;' });
+        if (active_active_traffic_view && !route_traffic_east2 && !route_traffic_east1) {
+            return getNormalLink()
+        } else {
+
+            if (region == 'east1' && route_traffic_east2) {
+                return getInactiveLink()
+            }
+
+            if (region == 'east1' && !route_traffic_east2) {
+                return getNormalLink()
+            }
+
+            if (region == 'east2' && !active_active_traffic_view) {
+                return getInactiveLink()
+            }
+
+            if (region == 'east2' && route_traffic_east1 && active_active_traffic_view) {
+                return getInactiveLink()
+            }
+
+            if (region == 'east2' && active_active_traffic_view) {
+                return getNormalLink()
+            }
+
+        }
+
+    }
+
+    function drawInfraGraph(multi_az, deploy_cross_region) {
+        // Create the input graph
+        g = new dagreD3.graphlib.Graph({ compound: true })
+            .setGraph({ rankdir: "LR", ranker: "network-simplex" })
+            .setDefaultEdgeLabel(function () { return {}; });
+
+        g.setNode('webclient', { labelType: "html", label: "<img src=../images/chrome.png style=width:90px;height:90px;><h6 style=\"margin-left:15px;\">Browser</h6>", shape: "circle", style: 'fill: #fff;' });
+        g.setNode('mobile', { labelType: "html", label: "<img src=../images/mobile.png style=width:110px;height:145px;><h6 style=\"margin-left:30px;\">Mobile</h6>", shape: "circle", style: 'fill: #fff;' });
+        g.setNode('cdn', { labelType: "html", label: "<img src=../images/akamai-logo.svg style=width:70px;height:30px;><h6 style=\"margin-left:20px;\">CDN</h6>", shape: "circle", style: 'fill: #fff;stroke: #0071c4; stroke-width: 5;' });
         g.setNode('gateway_east1', { labelType: "html", label: "<img src=../images/apigee.png style=width:60px;height:20px;>", shape: "circle", style: 'fill: #fff;stroke: #0071c4; stroke-width: 5;' });
         g.setNode('gateway_west2', { labelType: "html", label: "<img src=../images/apigee.png style=width:60px;height:20px;>", shape: "circle", style: 'fill: #fff;stroke: #0071c4; stroke-width: 5;' });
         g.setNode('fargate_az1', { labelType: "html", label: '<img src=../images/Fargate.png style=width:40px;height:40px;>\n<h6>Shield</h6>', shape: "circle", style: 'fill: #fff;stroke:#fff' });
         g.setNode('fargate_az2', { labelType: "html", label: '<img src=../images/Fargate.png style=width:40px;height:40px;>\n<h6>Shield</h6>', shape: "circle", style: 'fill: #fff;stroke:#fff' });
         g.setNode('fargate_az3', { labelType: "html", label: '<img src=../images/Fargate.png style=width:40px;height:40px;>\n<h6>Shield</h6>', shape: "circle", style: 'fill: #fff;stroke:#fff' });
         g.setNode('alb', { labelType: "html", label: '<img src=../images/Res_Elastic-Load-Balancing_Application-Load-Balancer_48.svg style=width:60px;height:60px;>\n<h6>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ALB</h6>', shape: "circle", style: 'fill: #fff;stroke:#fff' });
-        g.setNode('r53', { labelType: "html", label: '<img src=../images/Res_Amazon-Route-53_Resolver_48.svg style=width:60px;height:60px;>\n<h6>&nbsp;&nbsp;Route 53</h6>', shape: "circle", style: 'fill: #fff;stroke:#fff' });
+        g.setNode('r53', {
+            labelType: "html", label: '<img src=../images/Res_Amazon-Route-53_Resolver_48.svg style=width:60px;height:60px;>\n<h6>&nbsp;&nbsp;Route 53</h6>', shape: "circle", style: 'fill: #fff;stroke:#fff',
+            menu: [
+
+                {
+                    title: 'Simulate Active-Active Traffic',
+                    action: function (elm, d) {
+                        context = "simulate_active_active_traffic"
+                        active_active_traffic_view = true
+                        deploy_cross_region = true
+                        route_traffic_east2 = false;
+                        route_traffic_east1 = false;
+                        console.log('Routing Traffic\t', JSON.stringify(d))
+                        console.log('simulate traffic' + context);
+                        drawInfraGraph(multi_az, deploy_cross_region)
+                        let message = context_map_message[context]
+                        updateSystemStatus(message['status'], 'success');
+                        updateSystemDescription(message['description'])
+                    }
+                }, {
+                    title: 'Route All Traffic to East1',
+                    action: function (elm, d) {
+                        context = 'entire_traffic_to_east1'
+                        console.log('Routing Traffic to east1\t', d)
+                        route_traffic_east2 = false;
+                        route_traffic_east1 = true;
+                        active_active_traffic_view = true;
+                        drawInfraGraph(multi_az, deploy_cross_region)
+
+
+                    }
+                },
+                {
+                    title: 'Route All Traffic to East2',
+                    action: function (elm, d) {
+                        context = 'entire_traffic_to_east2'
+                        route_traffic_east1 = false;
+                        route_traffic_east2 = true
+                        active_active_traffic_view = true
+                        deploy_cross_region = true
+                        console.log('Routing Traffic to east2\t', d, multi_az, deploy_cross_region)
+                        drawInfraGraph(multi_az, deploy_cross_region)
+
+                    }
+                }
+            ]
+        });
         g.setNode('rds_proxy', { labelType: "html", label: '<img src=../images/Res_Amazon-RDS-Proxy-Instance_48.svg style=width:70px;height:70px;>\n<h6>&nbsp;Proxy</h6>', shape: "circle", style: 'fill: #fff;stroke:#fff' });
         g.setNode('rds_aurora', {
             labelType: "html", label: "<img src=../images/Aurora.png style=width:70px;height:70px;>",
             shape: "circle", style: 'fill: #fff;'
         });
-
-        g.setNode('group', { label: 'US-east-1', clusterLabelPos: 'top', style: 'fill: #fff;' });
+        g.setNode('vpc', { labelType: "html", label: "<span style=\"margin-left:20px;\">VPC</span><img src=../images/aws-logo.svg style=width:50px;height:50px;>", clusterLabelPos: 'top', style: 'fill: #fff;' });
+        g.setNode('group', { label: 'Fargate-US-east-1', clusterLabelPos: 'top', style: 'fill: #fff;' });
+        g.setNode('riskapi', { label: 'External Calls', clusterLabelPos: 'top', style: 'fill: #fff;' });
         g.setNode('lookup', { label: 'DNS Service', clusterLabelPos: 'top', style: 'fill: #fff;' });
         g.setNode('gateway_group1', { label: 'Gateway-us-east-1', clusterLabelPos: 'bottom', style: 'fill: #fff' });
         g.setNode('gateway_group2', { label: 'Gateway-us-west-2', clusterLabelPos: 'bottom', style: 'fill: #fff' });
-        g.setNode('shield_az1', { label: 'Shield-AZ-1', clusterLabelPos: 'bottom', style: 'fill: #fff;' });
-        g.setNode('shield_az2', { label: 'Shield-AZ-2', clusterLabelPos: 'bottom', style: 'fill: #fff' });
-        g.setNode('shield_az3', { label: 'Shield-AZ-3', clusterLabelPos: 'bottom', style: 'fill: #fff' });
-
+        g.setNode('shield_az1', { label: 'east-1a', clusterLabelPos: 'bottom', style: 'fill: #fff;' });
+        g.setNode('shield_az2', { label: 'east-1b', clusterLabelPos: 'bottom', style: 'fill: #fff' });
+        g.setNode('shield_az3', { label: 'east-1c', clusterLabelPos: 'bottom', style: 'fill: #fff' });
+        g.setNode('transmit', { labelType: "html", label: '<img src=../images/Transmit.png style=width:100px;height40px;margin-top:10px;>\n<h6>&nbsp;DRS RiskSDK</h6>', shape: "circle", style: 'fill: #fff;stroke:#fff' });
+        g.setParent('transmit', 'riskapi');
         g.setParent('shield_az1', 'group');
         g.setParent('shield_az2', 'group');
         g.setParent('shield_az3', 'group');
-
         g.setParent('gateway_east1', 'gateway_group1');
         g.setParent('gateway_west2', 'gateway_group2');
         g.setParent('r53', 'lookup');
@@ -322,7 +525,9 @@
         g.setParent('fargate_az1', 'shield_az1');
         g.setParent('fargate_az2', 'shield_az2');
         g.setParent('fargate_az3', 'shield_az3');
-
+        g.setParent('group', 'vpc')
+        g.setParent('alb', 'vpc')
+        g.setParent('rds_proxy', 'vpc')
         if (multi_az) {
 
             g.setNode('DB', { label: 'US-east-1 WRITER (AZ-1)', clusterLabelPos: 'bottom', style: 'fill: #fff' });
@@ -330,33 +535,38 @@
                 labelType: "html", label: "<img src=../images/Aurora.png style=width:70px;height:70px;>",
                 shape: "circle", style: 'fill: #fff;'
             });
+
             g.setNode('rds_aurora_az3', {
                 labelType: "html", label: "<img src=../images/Aurora.png style=width:70px;height:70px;>",
                 shape: "circle", style: 'fill: #fff;'
             });
+
             g.setNode('DB_az2', { label: 'US-east-1 Read Rep(AZ-2)', clusterLabelPos: 'bottom', style: 'fill: #fff;size:3em;' });
             g.setNode('DB_az3', { label: 'US-east-1 Read Rep (AZ-3)', clusterLabelPos: 'bottom', style: 'fill: #fff' });
+            g.setParent('DB', 'vpc')
+            g.setParent('DB_az2', 'vpc')
+            g.setParent('DB_az3', 'vpc')
+
             g.setParent('rds_aurora', 'DB');
             g.setParent('rds_aurora_az2', 'DB_az2');
             g.setParent('rds_aurora_az3', 'DB_az3');
-
-            g.setEdge('rds_aurora', 'rds_aurora_az2', getNormalLink());
-            g.setEdge('rds_aurora', 'rds_aurora_az3', getNormalLink());
+            g.setEdge('rds_aurora', 'rds_aurora_az2', getLink('east1'));
+            g.setEdge('rds_aurora', 'rds_aurora_az3', getLink('east1'));
 
         }
 
-        if (cross_region) {
+        if (deploy_cross_region) {
 
+            g.setNode('vpc2', { labelType: "html", label: "<span style=\"margin-left:20px;\">VPC2</span><img src=../images/aws-logo.svg style=width:50px;height:50px;>", clusterLabelPos: 'top', style: 'fill: #fff;' });
             g.setNode('rds_proxy_e2', { labelType: "html", label: '<img src=../images/Res_Amazon-RDS-Proxy-Instance_48.svg style=width:70px;height:70px;>\n<h6>&nbsp;Proxy_2</h6>', shape: "circle", style: 'fill: #fff;stroke:#fff' });
             g.setNode('alb_east2', { labelType: "html", label: '<img src=../images/Res_Elastic-Load-Balancing_Application-Load-Balancer_48.svg style=width:75px;height:75px;>\n<h6>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ALB</h6>', shape: "circle", style: 'fill: #fff;stroke:#fff' });
             g.setNode('fargate_east2_az1', { labelType: "html", label: '<img src=../images/Fargate.png style=width:40px;height:40px;>\n<h6>Shield</h6>', shape: "circle", style: 'fill: #fff;stroke:#fff' });
             g.setNode('fargate_east2_az2', { labelType: "html", label: '<img src=../images/Fargate.png style=width:40px;height:40px;>\n<h6>Shield</h6>', shape: "circle", style: 'fill: #fff;stroke:#fff' });
             g.setNode('fargate_east2_az3', { labelType: "html", label: '<img src=../images/Fargate.png style=width:40px;height:40px;>\n<h6>Shield</h6>', shape: "circle", style: 'fill: #fff;stroke:#fff' });
             g.setNode('group2', { label: 'US-east-2', clusterLabelPos: 'top', style: 'fill: #fff;' });
-            g.setNode('shield_east2', { label: 'Shield-AZ-1', clusterLabelPos: 'bottom', style: 'fill: #fff' });
-            g.setNode('shield_east2_az2', { label: 'Shield-AZ-2', clusterLabelPos: 'bottom', style: 'fill: #fff' });
-            g.setNode('shield_east2_az3', { label: 'Shield-AZ-3', clusterLabelPos: 'bottom', style: 'fill: #fff' });
-
+            g.setNode('shield_east2', { label: 'east-2a', clusterLabelPos: 'bottom', style: 'fill: #fff' });
+            g.setNode('shield_east2_az2', { label: 'east-2b', clusterLabelPos: 'bottom', style: 'fill: #fff' });
+            g.setNode('shield_east2_az3', { label: 'east-2c', clusterLabelPos: 'bottom', style: 'fill: #fff' });
             g.setNode('rds_aurora_east2_az2', {
                 labelType: "html", label: "<img src=../images/Aurora.png style=width:70px;height:70px;>",
                 shape: "circle", style: 'fill: #fff;'
@@ -370,73 +580,102 @@
             g.setParent('shield_east2', 'group2');
             g.setParent('shield_east2_az2', 'group2');
             g.setParent('shield_east2_az3', 'group2');
-
             g.setParent('fargate_east2_az1', 'shield_east2');
             g.setParent('fargate_east2_az2', 'shield_east2_az2');
             g.setParent('fargate_east2_az3', 'shield_east2_az3');
             g.setParent('rds_aurora_east2_az2', 'DB_east2_az2');
             g.setParent('rds_aurora_east2_az3', 'DB_east2_az3');
+            g.setParent('group2', 'vpc2')
+            g.setParent('alb_east2', 'vpc2')
+            g.setParent('rds_proxy_e2', 'vpc2')
+            g.setParent('DB_east2_az2', 'vpc2');
+            g.setParent('DB_east2_az3', 'vpc2');
+            g.setEdge('gateway_east1', 'alb_east2', getLink('east2'));
+            g.setEdge('gateway_west2', 'alb_east2', getLink('east2'));
+            g.setEdge('alb_east2', 'fargate_east2_az1', getLink('east2'));
+            g.setEdge('alb_east2', 'fargate_east2_az2', getLink('east2'));
+            g.setEdge('alb_east2', 'fargate_east2_az3', getLink('east2'));
+            g.setEdge('fargate_east2_az1', 'rds_proxy_e2', getLink('east2'));
+            g.setEdge('fargate_east2_az2', 'rds_proxy_e2', getLink('east2'));
+            g.setEdge('fargate_east2_az3', 'rds_proxy_e2', getLink('east2'));
+            g.setEdge('fargate_east2_az1', 'transmit', getLink('east2'));
+            g.setEdge('fargate_east2_az2', 'transmit', getLink('east2'));
+            g.setEdge('fargate_east2_az3', 'transmit', getLink('east2'));
+            g.setEdge('rds_proxy_e2', 'rds_aurora_east2_az2', getLink('east2'));
+            g.setEdge('rds_proxy_e2', 'rds_aurora_east2_az3', getLink('east2'));
 
-            g.setEdge('gateway_east1', 'alb_east2', getNormalLink());
-            g.setEdge('alb_east2', 'fargate_east2_az1', getNormalLink());
-            g.setEdge('alb_east2', 'fargate_east2_az2', getNormalLink());
-            g.setEdge('alb_east2', 'fargate_east2_az3', getNormalLink());
-            g.setEdge('fargate_east2_az1', 'rds_proxy_e2', getNormalLink());
-            g.setEdge('fargate_east2_az2', 'rds_proxy_e2', getNormalLink());
-            g.setEdge('fargate_east2_az3', 'rds_proxy_e2', getNormalLink());
-            g.setEdge('rds_proxy_e2', 'rds_aurora_east2_az2', getNormalLink());
-            g.setEdge('rds_proxy_e2', 'rds_aurora_east2_az3', getNormalLink());
         }
 
         // Set up edges, no special attributes.
-        g.setEdge('mobile', 'cdn', getNormalLink());
-        g.setEdge('webclient', 'cdn', getNormalLink());
-        g.setEdge('cdn', 'r53', getNormalLink());
-        // g.setEdge('r53', 'cdn', getNormalLink());    
-        g.setEdge('cdn', 'gateway_east1', getNormalLink());
-        g.setEdge('cdn', 'gateway_west2', getNormalLink());  
-        g.setEdge('gateway_east1', 'r53', getNormalLink());
-        g.setEdge('gateway_west2', 'r53', getNormalLink());
-        // g.setEdge('r53', 'gateway_east1', getNormalLink());
-        // g.setEdge('r53', 'gateway_west2', getNormalLink());
-        g.setEdge('gateway_east1', 'alb', getNormalLink());
-        g.setEdge('gateway_west2', 'alb', getNormalLink());
-        g.setEdge('alb', 'fargate_az2', getNormalLink());
-        g.setEdge('alb', 'fargate_az3', getNormalLink());
-        g.setEdge('alb', 'fargate_az1', appcontainers_zone_failure ? getErrorLink() : getNormalLink());
-        g.setEdge('fargate_az1', 'rds_proxy', appcontainers_zone_failure ? getErrorLink() : getNormalLink());
-        g.setEdge('fargate_az2', 'rds_proxy', getNormalLink());
-        g.setEdge('fargate_az3', 'rds_proxy', getNormalLink());
-        g.setEdge('rds_proxy', 'rds_aurora', getNormalLink());
-       
+        g.setEdge('mobile', 'cdn', fargate_east1_app_region_failure ? getErrorLink() : getLink('east1'));
+        g.setEdge('webclient', 'cdn', fargate_east1_app_region_failure ? getErrorLink() : getLink('east1'));
+        if (!route_traffic_east2) {
+            g.setEdge('cdn', 'r53', getLink('east1'));
+            g.setEdge('cdn', 'gateway_east1', fargate_east1_app_region_failure ? getErrorLink() : getLink('east1'));
+            g.setEdge('cdn', 'gateway_west2', fargate_east1_app_region_failure ? getErrorLink() : getLink('east1'));
+            g.setEdge('gateway_east1', 'r53', getLink('east1'));
+            g.setEdge('gateway_west2', 'r53', getLink('east1'));
+        } else {
+            g.setEdge('cdn', 'r53', getLink('east2'));
+            g.setEdge('cdn', 'gateway_east1', getLink('east2'));
+            g.setEdge('cdn', 'gateway_west2', getLink('east2'));
+            g.setEdge('gateway_east1', 'r53', getLink('east2'));
+            g.setEdge('gateway_west2', 'r53', getLink('east2'));
+        }
+
+
+        g.setEdge('gateway_east1', 'alb', fargate_east1_app_region_failure ? getErrorLink() : getLink('east1'));
+        g.setEdge('gateway_west2', 'alb', fargate_east1_app_region_failure ? getErrorLink() : getLink('east1'));
+
+        g.setEdge('alb', 'fargate_az1', fargate_east1_zone1_failure ? getErrorLink() : getLink('east1'));
+        g.setEdge('fargate_az1', 'rds_proxy', fargate_east1_zone1_failure ? getErrorLink() : getLink('east1'));
+        g.setEdge('fargate_az1', 'transmit', fargate_east1_zone1_failure ? getErrorLink() : getLink('east1'));
+
+        g.setEdge('alb', 'fargate_az2', fargate_east1_zone2_failure ? getErrorLink() : getLink('east1'));
+        g.setEdge('fargate_az2', 'rds_proxy', fargate_east1_zone2_failure ? getErrorLink() : getLink('east1'));
+        g.setEdge('fargate_az2', 'transmit', fargate_east1_zone2_failure ? getErrorLink() : getLink('east1'));
+
+        g.setEdge('alb', 'fargate_az3', fargate_east1_zone3_failure ? getErrorLink() : getLink('east1'));
+        g.setEdge('fargate_az3', 'rds_proxy', fargate_east1_zone3_failure ? getErrorLink() : getLink('east1'));
+        g.setEdge('fargate_az3', 'transmit', fargate_east1_zone3_failure ? getErrorLink() : getLink('east1'));
+
+        g.setEdge('rds_proxy', 'rds_aurora', getLink('east1'));
+
         g.nodes().forEach(function (v) {
             var node = g.node(v);
-            // Round the corners of the nodes
             node.rx = node.ry = 2;
         });
 
-        // Set up an SVG group so that we can translate the final graph.
-        var svg = d3.select("svg"),
-            svgGroup = svg.append("g")
-            , inner = svg.select("g");
+        // Select the SVG element and clear it before drawing
+        var svg = d3.select("#svg-canvas");
+        svg.selectAll("*").remove();
+        var svgGroup = svg.append("g");
+        var inner = svg.select("g");
+        var render = new dagreD3.render();
+        render(svgGroup, g);
 
+        // 1. Get the dimensions of the rendered graph
+        var graphWidth = g.graph().width + 40; // Add some padding
+        var graphHeight = g.graph().height + 40;
+
+        // 2. Set the viewBox on the SVG element
+        // This makes the graph scalable and responsive to the container size
+        svg.attr("viewBox", "0 0 " + graphWidth + " " + graphHeight);
+
+        // 3. Re-enable the zoom/pan functionality
         var zoom = d3.behavior.zoom().on("zoom", function () {
             inner.attr("transform", "translate(" + d3.event.translate + ")" +
                 "scale(" + d3.event.scale + ")");
         });
+        svg.call(zoom);
 
-        // svg.call(zoom);
+        // Ensure the initial view is centered and scaled to fit (if needed)
+        // For a first-time render, you can set an initial transform.
+        // This is often not necessary as viewBox handles it, but can be useful.
+        // We will reset the zoom to an initial state.
+        zoom.translate([(svg.property("clientWidth") - g.graph().width * 1) / 2, 20]).scale(1).event(svg);
 
-        // Create the renderer
-        var render = new dagreD3.render();
-
-        // Run the renderer. This is what draws the final graph.
-        render(d3.select("svg g"), g);
-
-        // Center the graph
-        var xCenterOffset = (svg.attr("width") - g.graph().width) / 2;
-        svgGroup.attr("transform", "translate(" + xCenterOffset + ", 20)");
-        svg.attr("height", g.graph().height + 20);
+        // --- MODIFICATION END ---
 
         svg.selectAll("g.node")
             .on("click", function (id) {
@@ -444,12 +683,18 @@
                 console.log("Clicked " + id, _node);
                 console.log(getEdgesForNode(g, id))
             })
-            .on('contextmenu', d3.contextMenu(menu));
+            .on('contextmenu', function (id) {
+                const event = d3.event;
+                event.preventDefault();
+                const nodeData = g.node(id);
+                const menuToShow = (nodeData && nodeData.menu) ? nodeData.menu : menu;
+                d3.contextMenu(menuToShow)(event, id);
+            });
     }
+
     function getEdgesForNode(graph, nodeId) {
         const edges = graph.edges();
         const nodeEdges = [];
-
         for (const edge of edges) {
             if (edge.v === nodeId || edge.w === nodeId) {
                 nodeEdges.push(edge);
@@ -457,4 +702,15 @@
         }
         return nodeEdges;
     }
+
+    window.onload = function () {
+        drawInfraGraph(multi_az, deploy_cross_region)
+        $('#default').click();
+        let message = context_map_message['default_east1']
+        updateSystemStatus(message['status'], 'success');
+        updateSystemDescription(message['description'])
+
+    }
 </script>
+
+</html>
