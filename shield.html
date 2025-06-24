@@ -213,7 +213,7 @@
                                 <h5>Availability</h5>
                             </div>
                             <div class="row g-0">
-                                <div class="col-md-3">
+                                <div class="col-md-4">
                                     <h5 class="mt-2">Business Requirement</h5>
                                     <!-- <h2 class="display-5">99.9%</h2> -->
                                     <div class="col-auto">
@@ -236,16 +236,31 @@
                                     </p>
                                     <p id="availability-table"></p>
                                 </div>
-                                <div class="col-md-3">
+                                <!-- <div class="col-md-3">
                                     <h5 class="mt-2">Actual Availability</h5>
                                     <h2 class="display-5">100%</h2>
-                                </div>
-                                <div class="col-md-6">
-                                    <h5 class="mt-2">Enter the estimated downtime in minutes</h5>
-                                    <input class="form-control form-control-lg" type="text" id="actual_observability"
+                                </div> -->
+                                <div class="offset-1 col-md-7">
+                                    <h5 class="mt-2">Estimated downtime in minutes / Month</h5>
+                                    <input class="form-control form-control-lg" type="text" id="downtime_in_minutes"
                                         placeholder="downtime in minutes" aria-label=".form-control-lg example">
-                                    <button type="button" class="btn btn-primary btn-lg mt-3 mb-2">Calculate Actual
+                                    <button type="button" class="btn btn-primary btn-lg mt-3 mb-2"
+                                        onclick="calculateAvailabilityFromDowntime()">Calculate Actual
                                         Availability</button>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h6 style="font-weight: bold;">Availability per year</h6>
+                                            <div class="col-md-12">
+                                                <h6 style="font-weight: bold;font-size: large;" id="actual_availability_year"></h6>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6 style="font-weight: bold;">Availability per month</h6>
+                                            <div class="col-md-12">
+                                                <h6 style="font-weight: bold;" id="actual_availability_month"></h6>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
