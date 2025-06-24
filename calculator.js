@@ -29,6 +29,38 @@ function downtimeToMs(val) {
     return 3600000 - (3600000 * (val / 100));
 };
 
+function calculateAvailabilityFromDowntime() {
+
+    var downtimeMinutes = document.getElementById('downtime_in_minutes').value
+    console.log('availability\t' + downtimeMinutes);
+    var applicationDowntimeMinutesYear = downtimeMinutes * 12
+    // Using 365.2425 days for an average Gregorian year
+    const totalMinutesInYear = 365.2425 * 24 * 60;
+    const totalMinutesInMonths = totalMinutesInYear / 12;
+
+    if (isNaN(downtimeMinutes) || downtimeMinutes < 0) {
+        return "Invalid input. Please enter a positive number.";
+    }
+
+    if (downtimeMinutes > applicationDowntimeMinutesYear) {
+        // More downtime than time in a year results in 0% availability
+        return "0.00000";
+    }
+
+    const availableMinutes = totalMinutesInYear - applicationDowntimeMinutesYear;
+    const availabilityMinutesMonths = totalMinutesInMonths - downtimeMinutes;
+
+    const availability = (availableMinutes / totalMinutesInYear) * 100;
+    const availabilityByMonth = (availabilityMinutesMonths / totalMinutesInMonths ) * 100
+
+    // .toFixed(5) gives a good level of precision for "nines" (e.g., 99.999%)
+    var availability_year = availability.toFixed(3);
+    var availability_month = availabilityByMonth.toFixed(3);
+
+    $('#actual_availability_year').text(availability_year + '%')
+    $('#actual_availability_month').text(availability_month + '%');
+}
+
 function availabilityCalculator() {
 
     var percentage = document.getElementById("availability");
@@ -60,7 +92,7 @@ function availabilityCalculator() {
         //     , ms_per_month, ms_per_week, ms_per_day
         //     , ms_per_hour];
 
-        var categories = [ms_per_year,ms_per_month];
+        var categories = [ms_per_year, ms_per_month];
 
         // output += "<tr><td class=\"pr3 bb b--black-20\">" + currentLevel + "%</td>";
         for (i = 0; i < categories.length; i++) {
