@@ -251,7 +251,8 @@
                                         <div class="col-md-6">
                                             <h6 style="font-weight: bold;">Availability per year</h6>
                                             <div class="col-md-12">
-                                                <h6 style="font-weight: bold;font-size: large;" id="actual_availability_year"></h6>
+                                                <h6 style="font-weight: bold;font-size: large;"
+                                                    id="actual_availability_year"></h6>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
@@ -373,7 +374,37 @@
             action: function (elm, d, i) {
 
                 console.log('Reset data is: ' + d);
-                fargate_east1_zone1_failure = false;
+                if (d.includes('fargate_az1')) {
+                    fargate_east1_zone1_failure = false;
+                    east1AvailabilityZonesCount = east1AvailabilityZonesCount + 1
+                } else if (d.includes('fargate_az2')) {
+                    fargate_east1_zone2_failure = false;
+                    east1AvailabilityZonesCount = east1AvailabilityZonesCount + 1
+                } else if (d.includes('fargate_az3')) {
+                    fargate_east1_zone3_failure = false;
+                    east1AvailabilityZonesCount = east1AvailabilityZonesCount + 1
+                }
+                if (east1AvailabilityZonesCount > 0) {
+                    fargate_east1_app_region_failure = false;
+                    if (east1AvailabilityZonesCount == 1) {
+                        updateSystemStatus('🔥 Multi-Zone Failure Detected.', 'error')
+                        east1FargateAvailablePercentage = defaultEast1AvailabilityZonesCount > 0 ? Math.round((east1AvailabilityZonesCount / defaultEast1AvailabilityZonesCount) * 100) : 0;
+                        updateSystemDescription(east1FargateAvailablePercentage + ' % of capacity restored. Possible system overload. Check latency, error rate, and throughput metrics to confirm.')
+
+                    } else if (east1AvailabilityZonesCount == 2) {
+
+                        updateSystemStatus('⚠️ Single-Zone Failure Detected.', 'warning')
+                        east1FargateAvailablePercentage = defaultEast1AvailabilityZonesCount > 0 ? Math.round((east1AvailabilityZonesCount / defaultEast1AvailabilityZonesCount) * 100) : 0;
+                        updateSystemDescription(east1FargateAvailablePercentage + ' % of capacity restored. Though system is operational, Check the overall latency, error and throughput metrics of the system')
+
+
+                    } else if (east1AvailabilityZonesCount == 3) {
+                        east1FargateAvailablePercentage = defaultEast1AvailabilityZonesCount > 0 ? Math.round((east1AvailabilityZonesCount / defaultEast1AvailabilityZonesCount) * 100) : 0;
+                        let message = context_map_message['default_east1']
+                        updateSystemStatus(message['status'], 'success');
+                        updateSystemDescription(message['description'])
+                    }
+                }
                 console.log('container\t' + fargate_east1_zone1_failure);
                 drawInfraGraph(multi_az, deploy_cross_region)
 
